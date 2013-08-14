@@ -1,3 +1,3 @@
-address: 192.168.1.25
+address: 192.168.97.171
 master: yes
-sensors: no
+sensors: yes
