@@ -186,45 +186,45 @@ int main(int argc, char* argv[])
 	other_device_vel[0] = 0;other_device_vel[1] = 0;other_device_vel[2] = 0;
     HDErrorInfo error;
 
-    HHD hHD = hdInitDevice(HD_DEFAULT_DEVICE);
+    /*HHD hHD = hdInitDevice(HD_DEFAULT_DEVICE);
     if (HD_DEVICE_ERROR(error = hdGetError()))
     {
         hduPrintError(stderr, &error, "Failed to initialize haptic device");
         fprintf(stderr, "\nPress any key to quit.\n");
         getch();
         return -1;
-    }
+    }*/
 
     printf("Haptic device surgery\n");
 
-    /* Schedule the haptic callback function for rendering the forces */
-    gCallbackHandle = hdScheduleAsynchronous(
-        AnchoredSpringForceCallback, 0, HD_MAX_SCHEDULER_PRIORITY);
+    ///* Schedule the haptic callback function for rendering the forces */
+    //gCallbackHandle = hdScheduleAsynchronous(
+    //    AnchoredSpringForceCallback, 0, HD_MAX_SCHEDULER_PRIORITY);
 
-    hdEnable(HD_FORCE_OUTPUT);
+    //hdEnable(HD_FORCE_OUTPUT);
 
-    /* Query the max closed loop control stiffness that the device
-       can handle.  */
-    hdGetDoublev(HD_NOMINAL_MAX_STIFFNESS, &gMaxStiffness);
+    ///* Query the max closed loop control stiffness that the device
+    //   can handle.  */
+    //hdGetDoublev(HD_NOMINAL_MAX_STIFFNESS, &gMaxStiffness);
 
-    /* Start the haptic rendering */
-    hdStartScheduler();
-    if (HD_DEVICE_ERROR(error = hdGetError()))
-    {
-        hduPrintError(stderr, &error, "Failed to start scheduler");
-        fprintf(stderr, "\nPress any key to quit.\n");
-        getch();
-        return -1;
-    }
+    ///* Start the haptic rendering */
+    //hdStartScheduler();
+    //if (HD_DEVICE_ERROR(error = hdGetError()))
+    //{
+    //    hduPrintError(stderr, &error, "Failed to start scheduler");
+    //    fprintf(stderr, "\nPress any key to quit.\n");
+    //    getch();
+    //    return -1;
+    //}
 
     /* Start the main application loop. */
     mainLoop();
 
-    /* Cleanup by stopping the haptics loop, unscheduling the asynchronous
-       callback, disabling the device. */
-    hdStopScheduler();
-    hdUnschedule(gCallbackHandle);
-    hdDisableDevice(hHD);
+    ///* Cleanup by stopping the haptics loop, unscheduling the asynchronous
+    //   callback, disabling the device. */
+    //hdStopScheduler();
+    //hdUnschedule(gCallbackHandle);
+    //hdDisableDevice(hHD);
 
     return 0;
 }
@@ -278,6 +278,13 @@ void mainLoop()
 		MyReceive(str); //Receives information for rendering through the UDP socket
 		//puts(str);
 
+		int r = rand();
+		if (r < 100)
+		{
+			printf(str);
+			printf("\r\n");
+		}
+
 		float x, y, z, vx, vy, vz;
 
             //Interpret the received data as position/velocity of the other haptic device
@@ -311,111 +318,111 @@ void mainLoop()
 		}
 
 
-        /* Check if the main scheduler callback has exited. */
-        if (!hdWaitForCompletion(gCallbackHandle, HD_WAIT_CHECK_STATUS))
-        {
-            fprintf(stderr, "\nThe main scheduler callback has exited\n");
-            fprintf(stderr, "\nPress any key to quit.\n");
-            getch();
-            return;
-        }
+        ///* Check if the main scheduler callback has exited. */
+        //if (!hdWaitForCompletion(gCallbackHandle, HD_WAIT_CHECK_STATUS))
+        //{
+        //    fprintf(stderr, "\nThe main scheduler callback has exited\n");
+        //    fprintf(stderr, "\nPress any key to quit.\n");
+        //    getch();
+        //    return;
+        //}
     }
 
 	CloseConnection ();
 	//Network cleanup
 }
 
+//
+///******************************************************************************
+// * Main scheduler callback for rendering forces.
+// * Also sends position and velocity data through UDP socket to the other device
+// *****************************************************************************/
+//HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
+//{
+//    //static hduVector3Dd anchor;
+//
+//    HDErrorInfo error;
+//
+//    hduVector3Dd position, velocity;
+//    hduVector3Dd force, deltaP;
+//	force[0] = 0; force[1] = 0; force[2] = 0;
+//
+//    hdBeginFrame(hdGetCurrentDevice());
+//
+//    hdGetDoublev(HD_CURRENT_POSITION, position);
+//
+//    if (anchored)
+//    {
+//        /* Compute force */
+//
+//        /*
+//		Renders the force based on the formula
+//        F = (p0-p)*k - v*b - weight
+//		for the master the formula is more complicated
+//        */
+//        hdGetDoublev(HD_CURRENT_VELOCITY, velocity);
+//
+//        hduVecSubtract(deltaP, anchor, position);
+//		force = deltaP;
+//        hduVecScaleInPlace(force, gSpringStiffness);
+//
+//        hduVecScaleInPlace(velocity, -gDamping);
+//        hduVecAdd(force, force, velocity);
+//
+//        //If this is the master and the slave isn't touching an object, no force is rendered
+//        if(master && (magnitude(deltaP) < touchT)){
+//            hduVecScaleInPlace(force, 0.0);
+//		}else
+//		if(master && (magnitude(deltaP) >= touchT)){
+//			hduVecScaleInPlace(force, (magnitude(force)-touchT*gSpringStiffness)/magnitude(force));
+//		}
+//
+//		//if sensors are enabled, add the sensor feedback with a weighted average
+//		if(master && sensorsEnabled){
+//			hduVector3Dd forceTemp;
+//			hduVecScaleInPlace(force, springW);
+//			forceTemp = forceB;
+//			hduVecScaleInPlace(forceTemp, sensorW);
+//			hduVecAdd(force, force, forceTemp);
+//		}
+//        
+//		
+//
+//		force[1] = force[1] + weight;//removes gravity
+//		double maxForce = 3.3;
+//		if(magnitude(force) > maxForce){
+//			hduVecScaleInPlace(force, maxForce/magnitude(force));
+//		}
+//		
+//        hdSetDoublev(HD_CURRENT_FORCE, force);
+//
+//
+//    }
+//
+//	//sends position and velocity information to the other device
+//
+//	char str[80];
+//	sprintf(str, "p(%f, %f, %f, %f, %f, %f)", position[0], position[1], position[2], velocity[0], velocity[1], velocity[2]);
+//	SendToHost(str);
+//
+//    hdEndFrame(hdGetCurrentDevice());
+//
+//    /* Check if an error occurred while attempting to render the force */
+//    if (HD_DEVICE_ERROR(error = hdGetError()))
+//    {
+//        if (hduIsForceError(&error))
+//        {
+//			printf("Maximum force exceeded!\n");
+//        }
+//        else if (hduIsSchedulerError(&error))
+//        {
+//            return HD_CALLBACK_DONE;
+//        }
+//    }
+//
+//    return HD_CALLBACK_CONTINUE;
+//}
 
-/******************************************************************************
- * Main scheduler callback for rendering forces.
- * Also sends position and velocity data through UDP socket to the other device
- *****************************************************************************/
-HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
-{
-    //static hduVector3Dd anchor;
-
-    HDErrorInfo error;
-
-    hduVector3Dd position, velocity;
-    hduVector3Dd force, deltaP;
-	force[0] = 0; force[1] = 0; force[2] = 0;
-
-    hdBeginFrame(hdGetCurrentDevice());
-
-    hdGetDoublev(HD_CURRENT_POSITION, position);
-
-    if (anchored)
-    {
-        /* Compute force */
-
-        /*
-		Renders the force based on the formula
-        F = (p0-p)*k - v*b - weight
-		for the master the formula is more complicated
-        */
-        hdGetDoublev(HD_CURRENT_VELOCITY, velocity);
-
-        hduVecSubtract(deltaP, anchor, position);
-		force = deltaP;
-        hduVecScaleInPlace(force, gSpringStiffness);
-
-        hduVecScaleInPlace(velocity, -gDamping);
-        hduVecAdd(force, force, velocity);
-
-        //If this is the master and the slave isn't touching an object, no force is rendered
-        if(master && (magnitude(deltaP) < touchT)){
-            hduVecScaleInPlace(force, 0.0);
-		}else
-		if(master && (magnitude(deltaP) >= touchT)){
-			hduVecScaleInPlace(force, (magnitude(force)-touchT*gSpringStiffness)/magnitude(force));
-		}
-
-		//if sensors are enabled, add the sensor feedback with a weighted average
-		if(master && sensorsEnabled){
-			hduVector3Dd forceTemp;
-			hduVecScaleInPlace(force, springW);
-			forceTemp = forceB;
-			hduVecScaleInPlace(forceTemp, sensorW);
-			hduVecAdd(force, force, forceTemp);
-		}
-        
-		
-
-		force[1] = force[1] + weight;//removes gravity
-		double maxForce = 3.3;
-		if(magnitude(force) > maxForce){
-			hduVecScaleInPlace(force, maxForce/magnitude(force));
-		}
-		
-        hdSetDoublev(HD_CURRENT_FORCE, force);
-
-
-    }
-
-	//sends position and velocity information to the other device
-
-	char str[80];
-	sprintf(str, "p(%f, %f, %f, %f, %f, %f)", position[0], position[1], position[2], velocity[0], velocity[1], velocity[2]);
-	SendToHost(str);
-
-    hdEndFrame(hdGetCurrentDevice());
-
-    /* Check if an error occurred while attempting to render the force */
-    if (HD_DEVICE_ERROR(error = hdGetError()))
-    {
-        if (hduIsForceError(&error))
-        {
-			printf("Maximum force exceeded!\n");
-        }
-        else if (hduIsSchedulerError(&error))
-        {
-            return HD_CALLBACK_DONE;
-        }
-    }
-
-    return HD_CALLBACK_CONTINUE;
-}
-
-double magnitude(hduVector3Dd v){
-    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-}
+//double magnitude(hduvector3dd v){
+//    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+//}
