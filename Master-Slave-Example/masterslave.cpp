@@ -6,6 +6,7 @@ this program make a haptic device act as a slave for the master device.
 Pedro Affonso and Garret Kottman 2012
 
 *******************************************************************************/
+//#define DON_CARES
 #ifdef  _WIN64
 #pragma warning (disable:4996)
 #endif
@@ -23,6 +24,9 @@ Pedro Affonso and Garret Kottman 2012
 #endif
 
 #include <HD/hd.h>
+#ifndef DON_CARES
+#include <HL/hl.h>
+#endif
 #include <HDU/hduError.h>
 #include <HDU/hduVector.h>
 #include <stdio.h>
@@ -114,8 +118,14 @@ void loadConfig(char* addr, int* remoteport, int* localport, bool* master, bool*
 	}else{
 	    char readv[20];
 		//read ip address
+#ifdef DON_CARES
 		fscanf(f, "address: %s\n", addr);
+#else
+		
+		char* temp = "192.168.97.183";
+		strcpy(addr, temp);
 
+#endif
 		//read master attribute
 		fscanf(f, "master: %s\n", readv);
 		if(strcmp(readv, "yes") == 0){
@@ -164,6 +174,44 @@ void savedata(){
 }
 #endif
 
+//static/local/global for the shit I just pasted in
+/* Haptic device and rendering context handles. */
+static HHD ghHD = HD_INVALID_HANDLE;
+static HHLRC ghHLRC = 0;
+
+#ifndef DON_CARES
+/*******************************************************************************
+ Initialize the HDAPI.  This involves initing a device configuration, enabling
+ forces, and scheduling a haptic thread callback for servicing the device.
+*******************************************************************************/
+void initHL()
+{
+    HDErrorInfo error;
+
+    ghHD = hdInitDevice(HD_DEFAULT_DEVICE);
+    if (HD_DEVICE_ERROR(error = hdGetError()))
+    {
+        hduPrintError(stderr, &error, "Failed to initialize haptic device");
+        fprintf(stderr, "Press any key to exit");
+        getchar();
+        exit(-1);
+    }
+    
+    ghHLRC = hlCreateContext(ghHD);
+    hlMakeCurrent(ghHLRC);
+
+    // Enable optimization of the viewing parameters when rendering
+    // geometry for OpenHaptics.
+    hlEnable(HL_HAPTIC_CAMERA_VIEW);
+
+    // Generate id for the shape.
+    //gSphereShapeId = hlGenShapes(1);
+
+    hlTouchableFace(HL_FRONT);
+}
+#endif
+
+
 /******************************************************************************
  Main function.
 ******************************************************************************/
@@ -180,12 +228,15 @@ int main(int argc, char* argv[])
 	SetupSocketToHost(remoteport, addr);
 
     //variable initialize
+#ifdef DON_CARES
 	anchored = true;
 	anchor[0] = 0;anchor[1] = 0;anchor[2] = 0;
 	forceB[0]=0; forceB[1]=0; forceB[2]=0;
 	other_device_vel[0] = 0;other_device_vel[1] = 0;other_device_vel[2] = 0;
+#endif
     HDErrorInfo error;
 
+#ifdef DON_CARES
     HHD hHD = hdInitDevice(HD_DEFAULT_DEVICE);
     if (HD_DEVICE_ERROR(error = hdGetError()))
     {
@@ -194,6 +245,9 @@ int main(int argc, char* argv[])
         getch();
         return -1;
     }
+#else
+	initHL();
+#endif
 
     printf("Haptic device surgery\n");
 
@@ -224,8 +278,11 @@ int main(int argc, char* argv[])
        callback, disabling the device. */
     hdStopScheduler();
     hdUnschedule(gCallbackHandle);
+#ifdef DON_CARES
     hdDisableDevice(hHD);
-
+#else
+	hdDisableDevice(ghHD);
+#endif
     return 0;
 }
 
@@ -344,6 +401,7 @@ HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
 
     hdGetDoublev(HD_CURRENT_POSITION, position);
 
+#ifdef DON_CARES
     if (anchored)
     {
         /* Compute force */
@@ -391,13 +449,22 @@ HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
 
 
     }
+#endif
 
 	//sends position and velocity information to the other device
-
+#ifdef DON_CARES
 	char str[80];
 	sprintf(str, "p(%f, %f, %f, %f, %f, %f)", position[0], position[1], position[2], velocity[0], velocity[1], velocity[2]);
+	SendToHost(str);
+#else
+	//char str[16*sizeof(HLdouble)];
+	HLdouble str[16];
+	hlGetDoublev(HL_PROXY_TRANSFORM, str);
+	SendToHost(str);
+#endif
 	//if (rand() < 100)
-		SendToHost(str);
+
+	
 
     hdEndFrame(hdGetCurrentDevice());
 

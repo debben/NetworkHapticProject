@@ -4,6 +4,7 @@ Don't forget to check the header file for the function descriptions.
 */
 #include "udpnet.h"
 
+
 SOCKET cs; //Socket handle
 SOCKADDR_IN target; //Socket address information
 
@@ -63,7 +64,7 @@ void CloseConnection ()
     WSACleanup(); //Clean up Winsock
 }
 
-
+#ifdef DON_CARES
 void SendToHost(char currentpos[]){
     char text[80];
     memset(text, 0, sizeof(text)); //Clear the buffer
@@ -73,6 +74,18 @@ void SendToHost(char currentpos[]){
 
 }
 
+#else
+
+void SendToHost(HLdouble* ptr){
+    char text[sizeof(HLdouble)*16];
+    memset(text, 0, sizeof(text)); //Clear the buffer
+    memcpy(text, ptr,sizeof(HLdouble)*16 );
+
+    sendto(cs, text, sizeof(text), 0, (struct sockaddr *)&target, sizeof(struct sockaddr));
+
+}
+
+#endif
 
 
 int SetupSocketOnPort(int portno)
