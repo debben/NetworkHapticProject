@@ -293,7 +293,7 @@ void mainLoop()
 
 			//printf("%f\n", y);
 			forceB[0] = 0;
-			forceB[1] = y;
+			forceB[1] = 0;
 			forceB[2] = 0;
 			anchored = true;
 		}else
@@ -396,7 +396,8 @@ HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
 
 	char str[80];
 	sprintf(str, "p(%f, %f, %f, %f, %f, %f)", position[0], position[1], position[2], velocity[0], velocity[1], velocity[2]);
-	SendToHost(str);
+	//if (rand() < 100)
+		SendToHost(str);
 
     hdEndFrame(hdGetCurrentDevice());
 
