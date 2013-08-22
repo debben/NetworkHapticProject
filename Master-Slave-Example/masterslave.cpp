@@ -29,6 +29,7 @@ Pedro Affonso and Garret Kottman 2012
 #include <math.h>
 #include "udpnet.h"//This file contains the network functions written for this program
 #include <stdio.h>
+#include <time.h>
 
 //char addr[80] = "192.168.1.2";
 
@@ -67,7 +68,7 @@ static hduVector3Dd forceB;
 static boolean anchored;
 //Tells if this device is following the other
 
-static double weight = 0.5;
+static double weight = 1.5;
 //Weight of the device plus attached equipment (in Newtons)
 //stylus ~0.5
 //shaft ~1.5
@@ -283,18 +284,22 @@ void mainLoop()
             //Interpret the received data as position/velocity of the other haptic device
 			//puts(str);
 		if(str[0] == 'f'){
-			printf("f");
+			//printf("f");
 			//this is a force information
 			//Interpret the received data as a force on y axis
-			sscanf(str, "f %f", &y);
+			sscanf(str, "f(%f, %f, %f)", &x, &y, &z);
 			y += weight;
 			y = y>3.3?3.3:y;
 			y = y<-3.3?-3.3:y;
+			x = x>3.3?3.3:x;
+			x = x<-3.3?-3.3:x;
+			z = z>3.3?3.3:z;
+			z = z<-3.3?-3.3:z;
 
 			//printf("%f\n", y);
-			forceB[0] = 0;
-			forceB[1] = 0;
-			forceB[2] = 0;
+			forceB[0] = x;
+			forceB[1] = y;
+			forceB[2] = z;
 			anchored = true;
 		}else
 		if(str[0] == 'p'){
@@ -308,6 +313,10 @@ void mainLoop()
 			anchored = true;
 			//puts(str);
 			//printf("%f %f %f %f %f %f\n", x, y, z, vx, vy, vz);
+		}else
+	    if(str[0] == 't'){
+			//Sends back the timestamp to server
+			SendToHost(str);
 		}
 
 
@@ -375,13 +384,13 @@ HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
 			hduVector3Dd forceTemp;
 			hduVecScaleInPlace(force, springW);
 			forceTemp = forceB;
-			hduVecScaleInPlace(forceTemp, sensorW);
+	//		hduVecScaleInPlace(forceTemp, sensorW);
 			hduVecAdd(force, force, forceTemp);
 		}
         
 		
 
-		force[1] = force[1] + weight;//removes gravity
+		force[1] = force[1] - weight;//removes gravity
 		double maxForce = 3.3;
 		if(magnitude(force) > maxForce){
 			hduVecScaleInPlace(force, maxForce/magnitude(force));

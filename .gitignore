@@ -1,2 +1,6 @@
 Master-Slave-Example/Debug/*
 Master-Slave-Example/masterslave.sdf
+
+Master-Slave-Example/ipch/*
+Master-Slave-Example/masterslave.opensf
+Master-Slave-Example/masterslave.suo
