@@ -4,3 +4,8 @@ Master-Slave-Example/masterslave.sdf
 Master-Slave-Example/ipch/*
 Master-Slave-Example/masterslave.opensf
 Master-Slave-Example/masterslave.suo
+
+Server/Debug/*
+Server/ipch/*
+Server/CoulombField_VS2010.sdf
+Server/CoulombField_VS2005.sdf
