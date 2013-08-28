@@ -68,7 +68,7 @@ static hduVector3Dd forceB;
 static boolean anchored;
 //Tells if this device is following the other
 
-static double weight = 1.5;
+static double weight = 0.5;
 //Weight of the device plus attached equipment (in Newtons)
 //stylus ~0.5
 //shaft ~1.5
@@ -390,14 +390,14 @@ HDCallbackCode HDCALLBACK AnchoredSpringForceCallback(void *pUserData)
         
 		
 
-		force[1] = force[1] - weight;//removes gravity
+		force[1] = force[1] + weight;//removes gravity
 		double maxForce = 3.3;
 		if(magnitude(force) > maxForce){
 			hduVecScaleInPlace(force, maxForce/magnitude(force));
 		}
 		
-        hdSetDoublev(HD_CURRENT_FORCE, force);
-
+        //hdSetDoublev(HD_CURRENT_FORCE, force);  //&&&
+		hdSetDoublev(HD_CURRENT_FORCE, hduVector3Dd(forceB[0],forceB[1],forceB[2]));
 
     }
 

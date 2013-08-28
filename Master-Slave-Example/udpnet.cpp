@@ -3,6 +3,7 @@ UDP NETWORK UTILITIES
 Don't forget to check the header file for the function descriptions.
 */
 #include "udpnet.h"
+#include "time.h"
 
 SOCKET cs; //Socket handle
 SOCKADDR_IN target; //Socket address information
@@ -63,16 +64,33 @@ void CloseConnection ()
     WSACleanup(); //Clean up Winsock
 }
 
+struct PacketsBufferStruct
+{
+	bool Active;
+	clock_t time_to_send;
+	char text[80];
+};
+
+const int PacketBufferSize = 10000, TimeDelay = 30;
+PacketsBufferStruct PacketsBuffer[PacketBufferSize];
+int NextBuffer = 0, NextToProcess = 0;
 
 void SendToHost(char currentpos[]){
-    char text[80];
-    memset(text, 0, sizeof(text)); //Clear the buffer
-    strcpy(text, currentpos);
-
-    sendto(cs, text, sizeof(text), 0, (struct sockaddr *)&target, sizeof(struct sockaddr));
-
+	//Store the packet into PacketsBuffer array, to be sent later (after the time delay)
+    memset(PacketsBuffer[NextBuffer].text, 0, sizeof(PacketsBuffer[NextBuffer].text)); //Clear the buffer
+    strcpy(PacketsBuffer[NextBuffer].text, currentpos);
+	PacketsBuffer[NextBuffer].time_to_send = clock() + TimeDelay;
+	PacketsBuffer[NextBuffer].Active = true;
+	NextBuffer = NextBuffer == PacketBufferSize - 1 ? 0 : NextBuffer + 1;
+	
+	//Send the packets in queue which have waited long enough
+	while(PacketsBuffer[NextToProcess].Active && PacketsBuffer[NextToProcess].time_to_send <= clock() && !(NextBuffer == NextToProcess))
+	{
+		PacketsBuffer[NextToProcess].Active = false;
+		sendto(cs, PacketsBuffer[NextToProcess].text, sizeof(PacketsBuffer[NextToProcess].text), 0, (struct sockaddr *)&target, sizeof(struct sockaddr));
+		NextToProcess = NextToProcess == PacketBufferSize - 1 ? 0 : NextToProcess + 1;
+	}
 }
-
 
 
 int SetupSocketOnPort(int portno)
